@@ -19,4 +19,10 @@ class Dedispersion:
         time_indices = torch.arange(self.data_tensor.shape[1], device=self.data_tensor.device).unsqueeze(0).unsqueeze(0).expand(len(self.dm_range), self.data_tensor.shape[0], -1)
         shifted_indices = (time_indices - expanded_delays) % self.data_tensor.shape[1]
 
-        return expanded_data.gather(2, shifted_indices)
+        dedispersed_data = expanded_data.gather(2, shifted_indices)
+
+        # Free up intermediate tensors to save memory
+        del delays, delay_samples, expanded_delays, time_indices, shifted_indices
+        torch.cuda.empty_cache()
+
+        return dedispersed_data

@@ -3,12 +3,12 @@ from setuptools import setup, find_packages
 setup(
     name='PyTorchDedispersion',
     version='0.1.0', 
-    author='Nikita Kosogorov',
+    author='Nikita Kosogorov+',
     author_email='nakosogorov@gmail.com',
     description='A package for detecting radio signal candidates using dedispersion with PyTorch.',
     packages=find_packages(),
     install_requires=[
-        'torch>=1.7.0',
+        'torch',
         'numpy',
         'matplotlib',
         'your'  

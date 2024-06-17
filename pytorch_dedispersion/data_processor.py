@@ -9,7 +9,6 @@ class DataProcessor:
 
     def load_data(self):
         # Load the file and extract header and data
-        # Assuming `your.Your` is a placeholder for the actual class used for file handling
         your_object = your.Your(self.file_path)
         self.header = your_object.your_header
         self.data = your_object.get_data(nstart=0, nsamp=10000).T
