@@ -11,13 +11,27 @@ from pytorch_dedispersion.boxcar_filter import BoxcarFilter
 from pytorch_dedispersion.candidate_finder import CandidateFinder
 
 def load_config(config_file):
-    """Load configuration from a JSON file."""
+    """Load configuration from a JSON file.
+
+    Args:
+        config_file (str): Path to the configuration file.
+
+    Returns:
+        dict: Configuration parameters.
+    """
     with open(config_file, 'r') as file:
         config = json.load(file)
     return config
 
 def generate_dm_range(dm_ranges):
-    """Generate a tensor of DM values based on specified ranges and steps."""
+    """Generate a tensor of DM values based on specified ranges and steps.
+
+    Args:
+        dm_ranges (list[dict]): List of DM range dictionaries.
+
+    Returns:
+        torch.Tensor: Tensor of DM values.
+    """
     dm_values = []
     for dm_range in dm_ranges:
         start = dm_range["start"]
@@ -27,7 +41,12 @@ def generate_dm_range(dm_ranges):
     return torch.tensor(dm_values)
 
 def save_candidates_to_csv(candidates, filename):
-    """Save candidate information to a CSV file."""
+    """Save candidate information to a CSV file.
+
+    Args:
+        candidates (list[dict]): List of detected candidates.
+        filename (str): Path to the output CSV file.
+    """
     with open(filename, mode='w', newline='') as file:
         writer = csv.writer(file)
         writer.writerow(["SNR", "Sample Number", "Time (sec)", "Boxcar Width", "DM Value"])
@@ -51,19 +70,38 @@ def print_gpu_memory_usage(device, label=""):
 
 
 def get_total_gpu_memory():
-    """Get the total GPU memory available."""
+    """Get the total GPU memory available.
+
+    Returns:
+        int: Total GPU memory in bytes.
+    """
     total_memory = torch.cuda.get_device_properties(0).total_memory
     return total_memory
 
 def load_bad_channels(file_path):
-    """Load bad channel indices from a file."""
+    """Load bad channel indices from a file.
+
+    Args:
+        file_path (str): Path to the bad channel file.
+
+    Returns:
+        list[int]: List of bad channel indices.
+    """
     with open(file_path, 'r') as file:
         content = file.read().strip()
         bad_channels = list(map(int, content.split()))
     return bad_channels
 
 def dedisperse_and_find_candidates(config, verbose=False, remove_trend=False, window_size=None, gpu_index=0):
-    """Perform dedispersion and find candidates."""
+    """Perform dedispersion and find candidates.
+
+    Args:
+        config (dict): Configuration parameters.
+        verbose (bool, optional): Enable verbose output. Defaults to False.
+        remove_trend (bool, optional): Remove trend from the data. Defaults to False.
+        window_size (int, optional): Window size for trend removal. Required if remove_trend is True.
+        gpu_index (int, optional): GPU index to use. Defaults to 0.
+    """
     if verbose:
         start_time = time()
 
@@ -104,7 +142,7 @@ def dedisperse_and_find_candidates(config, verbose=False, remove_trend=False, wi
     device = torch.device(f'cuda:{gpu_index}' if torch.cuda.is_available() else 'cpu')
     if verbose:
         print(f"Using device: {device}")
-    data_tensor = torch.tensor(data, dtype=torch.float32).to(device)
+    #data_tensor = torch.tensor(data, dtype=torch.float32).to(device)
     frequencies_tensor = torch.tensor(frequencies, dtype=torch.float32).to(device)
     freq_start = frequencies_tensor[0]
     dm_range = dm_range.to(device)
@@ -114,14 +152,12 @@ def dedisperse_and_find_candidates(config, verbose=False, remove_trend=False, wi
         print_gpu_memory_usage(device, "Initial GPU memory usage:")
 
     # Calculate required memory for dedispersion
-    initial_memory = torch.cuda.memory_allocated(device)
-    num_dms = len(dm_range)
     total_gpu_memory = torch.cuda.get_device_properties(device).total_memory
     available_memory = total_gpu_memory * 0.90
 
-    required_memory_per_dm = initial_memory * 4
-    batch_fraction = available_memory / (required_memory_per_dm * num_dms)
-    batch_size = int(batch_fraction * len(frequencies))
+    required_memory_per_frequency = data.shape[1] * 4 * len(dm_range) * 4
+    batch_size = int(available_memory / required_memory_per_frequency)
+    
     if batch_size < 1:
         raise MemoryError("Batch size is less than 1 frequency channel. Reduce the number of DM trials to fit within available GPU memory.")
 
@@ -129,11 +165,13 @@ def dedisperse_and_find_candidates(config, verbose=False, remove_trend=False, wi
 
     if batch_size < len(frequencies):
         # Perform dedispersion in batches
+        total_batches = len(range(0, len(frequencies), batch_size))
         print("Performing dedispersion in batches due to memory constraints...")
-        for start_idx in range(0, len(frequencies), batch_size):
+        for batch_idx, start_idx in enumerate(range(0, len(frequencies), batch_size)):
             end_idx = min(start_idx + batch_size, len(frequencies))
             freq_batch = frequencies_tensor[start_idx:end_idx]
-            data_batch = data_tensor[start_idx:end_idx, :]
+            #data_batch = data_tensor[start_idx:end_idx, :]
+            data_batch = torch.tensor(data[start_idx:end_idx, :], dtype=torch.float32).to(device)
 
             dedisperse = Dedispersion(data_batch, freq_batch, dm_range, freq_start, time_resolution)
             dedispersed_data = dedisperse.perform_dedispersion()
@@ -141,11 +179,17 @@ def dedisperse_and_find_candidates(config, verbose=False, remove_trend=False, wi
 
             summed_data += batch_summed_data
             
+            # Print progress
+            arrow = '=' * (batch_idx + 1) + '>'
+            spaces = ' ' * (total_batches - (batch_idx + 1))
+            print(f"[{arrow}{spaces}] {batch_idx + 1}/{total_batches} batches processed", end='\r')
+
             # Free up memory
             del freq_batch, data_batch, dedispersed_data, batch_summed_data
             torch.cuda.empty_cache()
     else:
         # Perform dedispersion without batching
+        data_tensor = torch.tensor(data, dtype=torch.float32).to(device)
         dedisperse = Dedispersion(data_tensor, frequencies_tensor, dm_range, freq_start, time_resolution)
         dedispersed_data = dedisperse.perform_dedispersion()
         summed_data = dedispersed_data.sum(dim=1)

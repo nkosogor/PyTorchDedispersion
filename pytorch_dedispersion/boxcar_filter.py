@@ -2,9 +2,24 @@ import torch
 
 class BoxcarFilter:
     def __init__(self, data_tensor):
+        """
+        Initialize BoxcarFilter.
+
+        Args:
+            data_tensor (torch.Tensor): The dedispersed data tensor.
+        """
         self.data_tensor = data_tensor
 
     def apply_boxcar(self, widths):
+        """
+        Apply boxcar filtering with different widths.
+
+        Args:
+            widths (list[int]): List of boxcar widths.
+
+        Returns:
+            torch.Tensor: Boxcar filtered data for each width.
+        """
         boxcar_data = []
         for width in widths:
             kernel = torch.ones((width,), dtype=torch.float32, device=self.data_tensor.device) / width

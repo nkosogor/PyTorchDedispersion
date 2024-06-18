@@ -8,6 +8,7 @@ This directory contains tests for the PyTorchDedispersion project. These tests e
 - `test_config.json`: A custom configuration file for the integration test.
 - `bad_channels.txt`: A file containing indices of channels to be excluded during the dedispersion process.
 - `integration_test.py`: The current integration test script.
+- `dedispersion_test.py`: The unit test script for dedispersion functionalities.
 
 ## Running the Tests
 
@@ -21,6 +22,11 @@ This directory contains tests for the PyTorchDedispersion project. These tests e
 2. **Run the integration test script**:
    ```bash
    python integration_test.py
+   ```
+
+2. **Run the unit tests**:
+   ```bash
+   python dedispersion_test.py
    ```
 
 ### What the Integration Test Does
@@ -60,4 +66,16 @@ All tests passed. Candidates file removed.
 
 This output indicates that the dedispersion process completed successfully, the expected candidates file was created, the expected line was found, and the test passed.
 
-## More tests to be added
+### What the Unit Tests Do
+The `dedispersion_test.py` script contains several test cases that validate the functionality of the dedispersion process. These tests include:
+
+1. `test_perform_dedispersion`: This test verifies that the `perform_dedispersion` method of the `Dedispersion` class correctly dedisperses the input data and returns a tensor of the expected shape.
+2. `test_best_dm`: This test checks that the `best_dm` method of the `Dedispersion` class correctly identifies the dispersion measure that maximizes the signal-to-noise ratio.
+
+### Expected Output
+
+When you run the tests, you should see output similar to the following:
+```
+Ran 2 tests in 5.598s
+OK
+```
