@@ -92,7 +92,19 @@ Additional command-line options:
 
 ### Output
 
-The script generates a CSV file containing candidate information, saved in the format `candidates_YYYYMMDD-HHMMSS.csv`.
+The script generates a CSV file containing candidate information, saved in the format `candidates_YYYYMMDD-HHMMSS.csv`. The output CSV file will have lines formatted as follows:
+
+```plaintext
+SNR,Sample Number,Time (sec),Boxcar Width,DM Value
+11.5,1601,2.03,1,476
+```
+
+- **SNR**: The signal-to-noise ratio of the detected candidate.
+- **Sample Number**: The sample number where the candidate was detected.
+- **Time (sec)**: The corresponding time in seconds for the detected sample.
+- **Boxcar Width**: The width of the boxcar filter used to detect the candidate.
+- **DM Value**: The dispersion measure value in pc/cm³ for the detected candidate.
+
 
 ## Running Tests
 
