@@ -19,7 +19,7 @@ class DataProcessor:
         """
         your_object = your.Your(self.file_path)
         self.header = your_object.your_header
-        self.data = your_object.get_data(nstart=0, nsamp=int(1e9)).T
+        self.data = your_object.get_data(nstart=0, nsamp=self.header.nspectra).T
 
     def get_frequencies(self):
         """
