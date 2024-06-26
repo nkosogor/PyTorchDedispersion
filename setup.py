@@ -11,7 +11,8 @@ setup(
         'torch',
         'numpy',
         'matplotlib',
-        'your'  
+        'your',
+        'tqdm' 
     ],
     classifiers=[
         'Programming Language :: Python :: 3',

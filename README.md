@@ -8,6 +8,7 @@
    - [Install PyTorch](#install-pytorch)
    - [Install PyTorchDedispersion](#install-pytorchdedispersion)
 4. [Usage Instructions](#usage-instructions)
+   - [Supported File Formats](#supported-file-formats)
    - [Configuration File Parameters](#configuration-file-parameters)
    - [Running the Dedispersion Script](#running-the-dedispersion-script)
    - [Output](#output)
@@ -70,6 +71,9 @@ cuDNN version: 8902
     ```
 
 ## Usage Instructions
+
+### Supported File Formats
+This library supports [Sigproc Filterbank](https://sigproc.sourceforge.net/) format.
 
 ### Configuration File Parameters
 

@@ -4,6 +4,7 @@ import argparse
 import csv
 import numpy as np
 from time import time, strftime
+from tqdm import tqdm
 from pytorch_dedispersion.file_handler import FileHandler
 from pytorch_dedispersion.data_processor import DataProcessor
 from pytorch_dedispersion.dedispersion import Dedispersion
@@ -165,12 +166,11 @@ def dedisperse_and_find_candidates(config, verbose=False, remove_trend=False, wi
 
     if batch_size < len(frequencies):
         # Perform dedispersion in batches
-        total_batches = len(range(0, len(frequencies), batch_size))
         print("Performing dedispersion in batches due to memory constraints...")
-        for batch_idx, start_idx in enumerate(range(0, len(frequencies), batch_size)):
+        total_batches = len(range(0, len(frequencies), batch_size))
+        for batch_idx, start_idx in enumerate(tqdm(range(0, len(frequencies), batch_size), total=total_batches, desc="Processing batches")):
             end_idx = min(start_idx + batch_size, len(frequencies))
             freq_batch = frequencies_tensor[start_idx:end_idx]
-            #data_batch = data_tensor[start_idx:end_idx, :]
             data_batch = torch.tensor(data[start_idx:end_idx, :], dtype=torch.float32).to(device)
 
             dedisperse = Dedispersion(data_batch, freq_batch, dm_range, freq_start, time_resolution)
@@ -178,15 +178,11 @@ def dedisperse_and_find_candidates(config, verbose=False, remove_trend=False, wi
             batch_summed_data = dedispersed_data.sum(dim=1)
 
             summed_data += batch_summed_data
-            
-            # Print progress
-            arrow = '=' * (batch_idx + 1) + '>'
-            spaces = ' ' * (total_batches - (batch_idx + 1))
-            print(f"[{arrow}{spaces}] {batch_idx + 1}/{total_batches} batches processed", end='\r')
 
             # Free up memory
             del freq_batch, data_batch, dedispersed_data, batch_summed_data
             torch.cuda.empty_cache()
+
     else:
         # Perform dedispersion without batching
         data_tensor = torch.tensor(data, dtype=torch.float32).to(device)
