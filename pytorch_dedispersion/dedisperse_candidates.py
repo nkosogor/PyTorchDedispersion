@@ -140,7 +140,11 @@ def dedisperse_and_find_candidates(config, verbose=False, remove_trend=False, wi
     dm_range = generate_dm_range(config["DM_RANGES"])
 
     # Convert data to tensor
-    device = torch.device(f'cuda:{gpu_index}' if torch.cuda.is_available() else 'cpu')
+    if torch.cuda.is_available():
+        device = torch.device(f'cuda:{gpu_index}')
+    else:
+        device = torch.device('cpu')
+
     if verbose:
         print(f"Using device: {device}")
     #data_tensor = torch.tensor(data, dtype=torch.float32).to(device)
@@ -153,11 +157,21 @@ def dedisperse_and_find_candidates(config, verbose=False, remove_trend=False, wi
         print_gpu_memory_usage(device, "Initial GPU memory usage:")
 
     # Calculate required memory for dedispersion
-    total_gpu_memory = torch.cuda.get_device_properties(device).total_memory
-    available_memory = total_gpu_memory * 0.90
+    if device.type == "cuda":
+        total_gpu_memory = torch.cuda.get_device_properties(device).total_memory
+        available_memory = total_gpu_memory * 0.90
+    else:
+        total_gpu_memory = None  # Not relevant for CPU execution
+        available_memory = None
+
+    
 
     required_memory_per_frequency = data.shape[1] * 4 * len(dm_range) * 4
-    batch_size = int(available_memory / required_memory_per_frequency)
+    if available_memory is not None:
+        batch_size = int(available_memory / required_memory_per_frequency)
+    else:
+        batch_size = 100  # Fallback: process 1 frequency channel at a time if on CPU
+
     
     if batch_size < 1:
         raise MemoryError("Batch size is less than 1 frequency channel. Reduce the number of DM trials to fit within available GPU memory.")
