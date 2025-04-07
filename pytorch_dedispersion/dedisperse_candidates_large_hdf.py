@@ -101,6 +101,14 @@ def dedisperse_and_find_candidates(config, verbose=False, remove_trend=False, wi
     if verbose:
         overall_start = time()
 
+    # load bad channels from config    
+    bad_channels = []
+    if "BAD_CHANNEL_FILE" in config:
+        bad_channels = load_bad_channels(config["BAD_CHANNEL_FILE"])
+        if verbose:
+            print(f"Loaded bad channels from {config['BAD_CHANNEL_FILE']}")
+            #print(f"Bad channels: {bad_channels}")
+
     handler = FileHandler(config["SOURCE"])
     file_path = handler.load_file()
     if verbose:
@@ -128,12 +136,18 @@ def dedisperse_and_find_candidates(config, verbose=False, remove_trend=False, wi
 
         # Loop over frequency slices using tqdm.
         total_slices = (total_freq + load_freq_batch_size - 1) // load_freq_batch_size
+
         for start_idx in tqdm(range(0, total_freq, load_freq_batch_size),
                               total=total_slices, desc="Loading frequency slices"):
             end_idx = min(start_idx + load_freq_batch_size, total_freq)
             # Load only this frequency batch.
-            processor = DataProcessor(file_path, freq_slice=(start_idx, end_idx))
+            processor = DataProcessor(file_path, freq_slice=(start_idx, end_idx), bad_channels=bad_channels)
             processor.load_data()
+
+            if processor.data.shape[0] == 0:
+            # e.g. all channels in [start_idx:end_idx) were "bad"
+                continue
+
             # Get data and frequencies for this slice.
             data_batch = processor.data          # shape: (nchan_slice, nsamples)
             frequencies = processor.get_frequencies()  # length: nchan_slice
@@ -164,7 +178,7 @@ def dedisperse_and_find_candidates(config, verbose=False, remove_trend=False, wi
         tsamp = time_resolution  # Use the time resolution from the file.
     else:
         # Normal processing: load the full dataset.
-        processor = DataProcessor(file_path)
+        processor = DataProcessor(file_path, bad_channels=bad_channels)
         processor.load_data()
         data = processor.data
         frequencies = processor.get_frequencies()
