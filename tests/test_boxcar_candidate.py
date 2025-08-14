@@ -19,7 +19,7 @@ def test_boxcar_and_candidates_simple():
     assert n_dm in boxed.shape   # somewhere we still have the DM axis
 
     finder = CandidateFinder(boxed, window_size=None)
-    cands = finder.find_candidates(SNR_threshold=5.0, widths=widths, remove_trend=False)
+    cands = finder.find_candidates(snr_threshold=5.0, boxcar_widths=widths, remove_trend=False)
 
     # Expect at least one candidate near our inserted spike
     assert len(cands) >= 1
@@ -28,3 +28,21 @@ def test_boxcar_and_candidates_simple():
               for c in cands)
     assert got
 
+def test_find_candidates_with_trend_removal():
+    n_dm, n_t = 2, 10
+    data = torch.ones((1, n_dm, n_t), dtype=torch.float32)
+    data[0, 1, 5] = 10.0  # spike
+
+    finder = CandidateFinder(data, window_size=3)
+    cands = finder.find_candidates(snr_threshold=2.0, boxcar_widths=[1], remove_trend=True)
+    assert any(c["DM Index"] == 1 and c["Time Sample"] == 5 for c in cands)
+
+def test_baseline_and_snr_direct():
+    data = torch.arange(20, dtype=torch.float32).reshape(2, 10)
+    finder = CandidateFinder(data, window_size=5)
+
+    baseline = finder.calculate_baseline(data)
+    assert baseline.shape == data.shape
+
+    snr = finder.calculate_snr(data)
+    assert torch.isclose(snr.mean(), torch.tensor(0.0), atol=1e-6)

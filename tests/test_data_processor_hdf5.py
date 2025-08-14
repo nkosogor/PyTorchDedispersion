@@ -4,6 +4,9 @@ import torch
 from pathlib import Path
 from pytorch_dedispersion.data_processor import DataProcessor
 
+import pytest
+from pytorch_dedispersion import file_handler
+
 def _make_tiny_h5(path: Path, ntime=8, freqs_mhz=(85.0, 84.0, 83.0), tInt=0.01):
     # Store MHz in Hz in the file (matches your loader)
     freqs_hz = np.asarray(freqs_mhz, dtype=np.float64) * 1e6
@@ -61,3 +64,8 @@ def test_hdf5_all_bad_channels(tmp_path):
     assert dp.header.tsamp == 0.005
     assert dp.get_frequencies().size == 0
 
+def test_file_handler_invalid_path(tmp_path):
+    bad_path = tmp_path / "does_not_exist.txt"
+    fh = file_handler.FileHandler(str(bad_path))
+    with pytest.raises(ValueError):
+        fh.load_file()
