@@ -1,8 +1,9 @@
+from typing import Sequence, List, Dict, Any
 import torch
 import torch.nn.functional as F
 
 class CandidateFinder:
-    def __init__(self, boxcar_data, window_size=50):
+    def __init__(self, boxcar_data: torch.Tensor, window_size: int = 50) -> None:
         """
         Initialize CandidateFinder.
 
@@ -13,7 +14,12 @@ class CandidateFinder:
         self.boxcar_data = boxcar_data
         self.window_size = window_size
 
-    def find_candidates(self, snr_threshold, boxcar_widths, remove_trend=False):
+    def find_candidates(
+            self,
+            snr_threshold: float,
+            boxcar_widths: Sequence[int],
+            remove_trend: bool = False,
+        ) -> List[Dict[str, Any]]:
         """
         Find candidates based on SNR threshold.
 
@@ -47,7 +53,7 @@ class CandidateFinder:
                     })
         return candidates
 
-    def calculate_baseline(self, data):
+    def calculate_baseline(self, data: torch.Tensor) -> torch.Tensor:
         """
         Calculate the baseline using a moving average.
 
@@ -62,7 +68,7 @@ class CandidateFinder:
         baseline = F.avg_pool1d(padded_data.unsqueeze(0), kernel_size=self.window_size, stride=1, padding=0).squeeze(0)
         return baseline
 
-    def calculate_snr(self, data):
+    def calculate_snr(self, data: torch.Tensor) -> torch.Tensor:
         """
         Calculate the signal-to-noise ratio (SNR).
 

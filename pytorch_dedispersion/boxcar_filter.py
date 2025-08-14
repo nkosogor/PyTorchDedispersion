@@ -1,7 +1,8 @@
+from typing import Sequence
 import torch
 
 class BoxcarFilter:
-    def __init__(self, data_tensor):
+    def __init__(self, data_tensor: torch.Tensor) -> None:
         """
         Initialize BoxcarFilter.
 
@@ -10,7 +11,7 @@ class BoxcarFilter:
         """
         self.data_tensor = data_tensor
 
-    def apply_boxcar(self, widths):
+    def apply_boxcar(self, widths: Sequence[int]) -> torch.Tensor:
         """
         Apply boxcar filtering with different widths.
 

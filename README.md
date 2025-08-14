@@ -1,4 +1,5 @@
 # PyTorchDedispersion
+[![Documentation Status](https://readthedocs.org/projects/pytorchdedispersion/badge/?version=latest)](https://pytorchdedispersion.readthedocs.io/en/latest/?badge=latest)
 
 ## Table of Contents
 1. [Description](#description)

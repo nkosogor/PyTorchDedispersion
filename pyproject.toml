@@ -39,7 +39,8 @@ docs = [
   "mkdocs>=1.6",
   "mkdocs-material>=9.5",
   "mkdocstrings[python]>=0.25",
-  "pymdown-extensions>=10.8"
+  "pymdown-extensions>=10.8",
+  "ruff>=0.1"
 ]
 
 
@@ -64,3 +65,15 @@ line-length = 100
 [tool.ruff]
 line-length = 100
 select = ["E","F","I","UP"]
+
+
+[tool.coverage.run]
+source = ["pytorch_dedispersion"]
+omit = [
+  "pytorch_dedispersion/dedisperse_candidates_large_hdf*.py",
+]
+
+[tool.coverage.report]
+skip_covered = true
+show_missing = true
+fail_under = 70

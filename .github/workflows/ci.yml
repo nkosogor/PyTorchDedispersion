@@ -1,0 +1,111 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.11"]  # add 3.9/3.10 after this is green
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Upgrade pip
+        run: python -m pip install -U pip
+
+      - name: Cache pip
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-${{ matrix.python-version }}-${{ hashFiles('**/pyproject.toml') }}
+          restore-keys: ${{ runner.os }}-pip-
+
+      - name: Install PyTorch (CPU wheels)
+        run: pip install torch --index-url https://download.pytorch.org/whl/cpu
+
+      - name: Install project (dev + fil)
+        run: pip install -e .[dev,fil]
+
+      - name: Install extra test helpers
+        run: pip install pytest-timeout psutil
+
+      - name: Show environment & free memory
+        run: |
+          python -V
+          echo "CPU: $(nproc) cores"
+          free -mh
+          ulimit -a
+          python - << 'PY'
+          import psutil, os
+          vm = psutil.virtual_memory()
+          print("psutil RAM total:", round(vm.total/2**30,2), "GiB, available:", round(vm.available/2**30,2), "GiB")
+          print("Env CUDA_VISIBLE_DEVICES:", os.environ.get("CUDA_VISIBLE_DEVICES"))
+          PY
+          pip list | sed -n '1,120p'
+
+      - name: Smoke import (quick sanity)
+        run: |
+          python - << 'PY'
+          import torch
+          import pytorch_dedispersion as _
+          from pytorch_dedispersion.dedispersion import Dedispersion
+          print("Imported Dedispersion OK")
+          PY
+
+      - name: Run tests (CPU-only) with coverage & timeouts
+        env:
+          CUDA_VISIBLE_DEVICES: ""
+          MPLBACKEND: "Agg"
+          PYTHONFAULTHANDLER: "1"
+          OMP_NUM_THREADS: "1"
+          OPENBLAS_NUM_THREADS: "1"
+          MKL_NUM_THREADS: "1"
+          NUMEXPR_NUM_THREADS: "1"
+          NUMBA_NUM_THREADS: "1"
+          PIP_DISABLE_PIP_VERSION_CHECK: "1"
+        run: |
+          # first, run just the one that was hanging to capture a stack on timeout
+          pytest -vv -k TestDedispersion::test_best_dm \
+                 --timeout=120 --timeout-method=thread \
+                 --maxfail=1 --durations=10
+          # then run the rest
+          pytest -vv --durations=10 --maxfail=1 \
+                 --cov=pytorch_dedispersion \
+                 --cov-report=term-missing:skip-covered \
+                 --cov-report=xml \
+                 --cov-fail-under=0
+
+      - name: Upload coverage.xml
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-xml-${{ matrix.python-version }}
+          path: coverage.xml
+
+  docs:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Upgrade pip
+        run: python -m pip install -U pip
+      - name: Install docs deps
+        run: pip install .[docs]
+      - name: Build docs (no deploy)
+        run: mkdocs build --strict

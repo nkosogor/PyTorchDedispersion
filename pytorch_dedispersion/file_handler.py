@@ -1,7 +1,8 @@
+from typing import NoReturn
 import os
 
 class FileHandler:
-    def __init__(self, source):
+    def __init__(self, source: str) -> None:
         """
         Initialize FileHandler.
 
@@ -10,7 +11,7 @@ class FileHandler:
         """
         self.source = source
 
-    def load_file(self):
+    def load_file(self) -> str:
         """
         Load the data file.
 
