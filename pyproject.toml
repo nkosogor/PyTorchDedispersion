@@ -35,6 +35,13 @@ dev = [
   "twine",
   "pre-commit"
 ]
+docs = [
+  "mkdocs>=1.6",
+  "mkdocs-material>=9.5",
+  "mkdocstrings[python]>=0.25",
+  "pymdown-extensions>=10.8"
+]
+
 
 [project.scripts]
 pydedisp = "pytorch_dedispersion.dedisperse_candidates:main"
