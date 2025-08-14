@@ -162,7 +162,7 @@ SNR,Sample Number,Time (sec),Boxcar Width,DM Value
 
 ## Running Tests
 
-We ship both unit and integration tests. To run the full test suite:
+Both unit and integration tests are included. To run the full test suite:
 
 ```bash
 # from repo root
