@@ -69,11 +69,12 @@ select = ["E","F","I","UP"]
 
 [tool.coverage.run]
 source = ["pytorch_dedispersion"]
+
+[tool.coverage.report]
 omit = [
   "pytorch_dedispersion/dedisperse_candidates_large_hdf*.py",
 ]
-
-[tool.coverage.report]
 skip_covered = true
 show_missing = true
 fail_under = 70
+

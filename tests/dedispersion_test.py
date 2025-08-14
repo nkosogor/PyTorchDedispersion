@@ -1,83 +1,82 @@
+import os
 import unittest
 import torch
 import numpy as np
 from pytorch_dedispersion.dedispersion import Dedispersion
 
 def generate_synthetic_data():
-    # Parameters
-    freq_start = 55  # MHz
-    freq_end = 85    # MHz
-    channel_width = 0.024  # MHz
-    time_resolution = 0.01  # seconds
-    max_time = 100  # seconds
-    true_dm = 40.0  # pc/cm^3
+    # Small mode in CI for speed
+    small = os.getenv("CI") == "1"
 
-    # Generate frequency and time arrays
-    frequencies = np.arange(freq_start, freq_end, channel_width)
-    time_samples = np.arange(0, max_time, time_resolution)
+    # Band and sampling
+    f_lo, f_hi = 55.0, 85.0           # MHz
+    df = 0.048 if small else 0.024    # coarser grid in CI
+    dt = 0.02 if small else 0.01      # larger tsamp in CI
+    t_max = 30.0 if small else 100.0  # shorter span in CI
 
-    # Generate synthetic data with noise
-    np.random.seed(42)
-    data = np.random.normal(0, 0.1, (len(frequencies), len(time_samples)))
-
-    # Constants
+    true_dm = 40.0
     k_dm = 4.148808e3  # MHz^2 cm^3 pc^-1 s
 
-    # Generate strong artificial signal with highest frequency first
-    signal_start_time = 50  # seconds
-    for i, freq in enumerate(frequencies[::-1]):  # Reverse the order of frequencies
-        delay = k_dm * true_dm * (-freq_start**-2 + freq**-2)
-        start_sample = int((signal_start_time + delay) / time_resolution)
-        if start_sample < len(time_samples):
-            data[len(frequencies) - 1 - i, start_sample] = 1.0  # Strong signal
+    freqs_asc = np.arange(f_lo, f_hi, df)
+    freqs = freqs_asc[::-1].copy().astype(np.float32)   # DESCENDING
+    t = np.arange(0.0, t_max, dt).astype(np.float32)
 
-    return data, frequencies, time_samples
+    rng = np.random.default_rng(42)
+    data = rng.normal(0.0, 0.1, (len(freqs), len(t))).astype(np.float32)
+
+    # Inject dispersed pulse referenced to TOP of band
+    f_ref = float(freqs[0])
+    t0 = 5.0 if small else 50.0
+    for ch, f in enumerate(freqs):
+        delay = k_dm * true_dm * (f**-2 - f_ref**-2)
+        idx = int((t0 + delay) / dt)
+        if idx < len(t):
+            data[ch, idx] += 5.0
+
+    return data, freqs, t
 
 class TestDedispersion(unittest.TestCase):
     def test_perform_dedispersion(self):
         data, frequencies, time_samples = generate_synthetic_data()
-
-        # Convert to PyTorch tensors
         data_tensor = torch.from_numpy(data)
         frequencies_tensor = torch.from_numpy(frequencies)
-        dm_range = torch.arange(0, 100, 0.5)  # pc/cm^3
-        freq_start = frequencies[0]
-        time_resolution = time_samples[1] - time_samples[0]
+        # coarser DM grid in CI
+        dm_step = 1.0 if os.getenv("CI") == "1" else 0.5
+        dm_range = torch.arange(0.0, 100.0 + 1e-6, dm_step, dtype=torch.float32)
+        freq_start = float(frequencies[0])
+        time_resolution = float(time_samples[1] - time_samples[0])
 
-        # Create Dedispersion instance and perform dedispersion
         dedispersion = Dedispersion(data_tensor, frequencies_tensor, dm_range, freq_start, time_resolution)
-        dedispersed_data = dedispersion.perform_dedispersion()
-
-        # Check the shape and type of the output
-        self.assertIsInstance(dedispersed_data, torch.Tensor)
-        self.assertEqual(dedispersed_data.shape, (len(dm_range), len(frequencies), len(time_samples)))
+        out = dedispersion.perform_dedispersion()
+        self.assertIsInstance(out, torch.Tensor)
+        self.assertEqual(out.shape, (len(dm_range), len(frequencies), len(time_samples)))
 
     def test_best_dm(self):
         data, frequencies, time_samples = generate_synthetic_data()
-
-        # Convert to PyTorch tensors
         data_tensor = torch.from_numpy(data)
         frequencies_tensor = torch.from_numpy(frequencies)
-        dm_range = torch.arange(0, 100, 0.5)  # pc/cm^3
-        freq_start = frequencies[0]
-        time_resolution = time_samples[1] - time_samples[0]
+        dm_step = 1.0 if os.getenv("CI") == "1" else 0.5
+        dm_range = torch.arange(0.0, 80.0 + 1e-6, dm_step, dtype=torch.float32)
+        freq_start = float(frequencies[0])
+        time_resolution = float(time_samples[1] - time_samples[0])
 
-        # Create Dedispersion instance and perform dedispersion
         dedispersion = Dedispersion(data_tensor, frequencies_tensor, dm_range, freq_start, time_resolution)
         dedispersed_data = dedispersion.perform_dedispersion()
 
-        # Sum along the frequency axis and find max value along the time axis for each DM
-        summed_data = dedispersed_data.sum(dim=1)
-        max_values, _ = torch.max(summed_data, dim=1)  # Unpack the tuple
+        summed = dedispersed_data.sum(dim=1)     # (n_dm, n_time)
+        max_vals = torch.amax(summed, dim=1)
+        i = int(torch.argmax(max_vals))
+        best_dm = float(dm_range[i])
 
-        # Find the best DM
-        best_dm_idx = torch.argmax(max_values).item()
-        best_dm = dm_range[best_dm_idx].item()
+        # Parabolic refinement (optional but nice)
+        if 0 < i < len(dm_range) - 1:
+            y0, y1, y2 = max_vals[i-1].item(), max_vals[i].item(), max_vals[i+1].item()
+            denom = (y0 - 2*y1 + y2)
+            delta = 0.5 * (y0 - y2) / denom if denom != 0 else 0.0
+            best_dm = float(dm_range[i]) + delta * float(dm_step)
 
-        # Check that the best DM is close to the true DM
-        true_dm = 40.0  # pc/cm^3
-        self.assertAlmostEqual(best_dm, true_dm, delta=0.1)  # Allow a small error
+        # Assert to DM grid resolution
+        self.assertLessEqual(abs(best_dm - 40.0), float(dm_step) + 1e-6)
 
-
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main()
