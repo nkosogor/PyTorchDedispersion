@@ -1,0 +1,35 @@
+site_name: PyTorchDedispersion
+site_url: https://pytorchdedispersion.readthedocs.io
+repo_url: https://github.com/nkosogor/PyTorchDedispersion
+repo_name: nkosogor/PyTorchDedispersion
+
+theme:
+  name: material
+  features:
+    - content.code.copy
+    - navigation.top
+    - navigation.tabs
+    - search.highlight
+    - toc.integrate
+
+plugins:
+  - search
+  - mkdocstrings:
+      handlers:
+        python:
+          options:
+            docstring_style: google
+            show_source: true
+            show_signature: true
+            separate_signature: true
+            inherited_members: true
+
+nav:
+  - Home: index.md
+  - Install: install.md
+  - Usage: usage.md
+  - Config: config.md
+  - Testing: testing.md
+  - API:
+      - reference/index.md
+
