@@ -1,3 +1,4 @@
+from typing import Any, Dict, List, Optional, Sequence, Tuple
 import json
 import torch
 import argparse
@@ -16,8 +17,16 @@ from threading import Thread
 from queue import Queue
 
 
-def cpu_loader(file_path, total_freq, slice_size, bad_channels,
-               out_q, pbar_scan, offset=0, step=1):
+def cpu_loader(
+        file_path: str,
+        total_freq: int,
+        slice_size: int,
+        bad_channels: Sequence[int],
+        out_q: "Queue[Tuple[torch.Tensor, torch.Tensor]]",  # runtime-only type
+        pbar_scan: Any,
+        offset: int = 0,
+        step: int = 1,
+    ) -> None:
     """
     Worker thread: reads slices [offset::step].
     """
@@ -44,12 +53,12 @@ def cpu_loader(file_path, total_freq, slice_size, bad_channels,
     if offset == 0:
         out_q.put(None)
 
-def load_config(config_file):
+def load_config(config_file: str) -> Dict[str, Any]:
     with open(config_file, 'r') as file:
         config = json.load(file)
     return config
 
-def generate_dm_range(dm_ranges):
+def generate_dm_range(dm_ranges: List[Dict[str, float]]) -> torch.Tensor:
     dm_values = []
     for dm_range in dm_ranges:
         start = dm_range["start"]
@@ -58,7 +67,7 @@ def generate_dm_range(dm_ranges):
         dm_values.extend(torch.arange(start, stop, step).tolist())
     return torch.tensor(dm_values)
 
-def save_candidates_to_csv(candidates, filename):
+def save_candidates_to_csv(candidates: List[Dict[str, Any]], filename: str) -> None:
     with open(filename, mode='w', newline='') as file:
         writer = csv.writer(file)
         writer.writerow(["SNR", "Sample Number", "Time (sec)", "Boxcar Width", "DM Value"])
@@ -71,7 +80,7 @@ def save_candidates_to_csv(candidates, filename):
                 candidate['DM Value']
             ])
 
-def print_gpu_memory_usage(device, label=""):
+def print_gpu_memory_usage(device: torch.device, label: str = "") -> None:
     allocated = torch.cuda.memory_allocated(device)
     reserved = torch.cuda.memory_reserved(device)
     summary = torch.cuda.memory_summary(device=device)
@@ -79,7 +88,13 @@ def print_gpu_memory_usage(device, label=""):
     print(f"Memory Reserved: {reserved / (1024 ** 2):.2f} MB")
     print(summary)
 
-def save_dedispersed_data(original_file_path, summed_data, dm_range, tsamp, verbose=True):
+def save_dedispersed_data(
+        original_file_path: str,
+        summed_data: torch.Tensor,
+        dm_range: torch.Tensor,
+        tsamp: float,
+        verbose: bool = True,
+    ) -> None:
     """
     Save the dedispersed and summed data to an HDF5
     Args:
@@ -122,13 +137,19 @@ def save_dedispersed_data(original_file_path, summed_data, dm_range, tsamp, verb
     if verbose:
         print(f"Dedispersed data saved to {output_filename}")
 
-def load_bad_channels(file_path):
+def load_bad_channels(file_path: str) -> List[int]:
     with open(file_path, 'r') as file:
         content = file.read().strip()
         bad_channels = list(map(int, content.split()))
     return bad_channels
 
-def dedisperse_and_find_candidates(config, verbose=False, remove_trend=False, window_size=None, gpu_index=0):
+def dedisperse_and_find_candidates(
+        config: Dict[str, Any],
+        verbose: bool = False,
+        remove_trend: bool = False,
+        window_size: Optional[int] = None,
+        gpu_index: int = 0,
+    ) -> None:
     if verbose:
         overall_start = time()
 
@@ -330,7 +351,7 @@ def dedisperse_and_find_candidates(config, verbose=False, remove_trend=False, wi
         print(f"Candidates saved to {filename}")
         print(f"Total processing time: {total_time:.2f} seconds")
 
-def main():
+def main() -> None:
     parser = argparse.ArgumentParser(description="Dedisperse data and find candidates.")
     parser.add_argument("-c", "--config", type=str, required=True, help="Path to the configuration file.")
     parser.add_argument("-v", "--verbose", action="store_true", help="Enable verbose output.")

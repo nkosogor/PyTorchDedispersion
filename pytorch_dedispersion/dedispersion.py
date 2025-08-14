@@ -1,7 +1,15 @@
+from typing import Any
 import torch
 
 class Dedispersion:
-    def __init__(self, data_tensor, frequencies_tensor, dm_range, freq_start, time_resolution):
+    def __init__(
+            self,
+            data_tensor: torch.Tensor,
+            frequencies_tensor: torch.Tensor,
+            dm_range: torch.Tensor,
+            freq_start: float,
+            time_resolution: float,
+        ) -> None:
         """
         Initialize Dedispersion.
 
@@ -18,7 +26,7 @@ class Dedispersion:
         self.freq_start = freq_start
         self.time_resolution = time_resolution
 
-    def perform_dedispersion(self):
+    def perform_dedispersion(self) -> torch.Tensor:
         """
         Perform dedispersion on the input data.
 

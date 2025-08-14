@@ -1,9 +1,15 @@
+from typing import Optional, Sequence, Tuple
 import numpy as np
 import h5py
 import your
 
 class DataProcessor:
-    def __init__(self, file_path, freq_slice=None, bad_channels=None):
+    def __init__(
+            self,
+            file_path: str,
+            freq_slice: Optional[Tuple[int, int]] = None,
+            bad_channels: Optional[Sequence[int]] = None,
+        ) -> None:
         """
         Initialize DataProcessor
         
@@ -19,7 +25,7 @@ class DataProcessor:
         self.freq_slice = freq_slice
         self.bad_channels = bad_channels if bad_channels else []
 
-    def load_data(self):
+    def load_data(self) -> None:
         """
         Load the file and extract header and data
         For .hdf5 files, uses h5py and converts frequencies from Hz to MHz,
@@ -31,7 +37,7 @@ class DataProcessor:
         else:
             self._load_fil()
 
-    def _load_fil(self):
+    def _load_fil(self) -> None:
         """
         Load a .fil file using the `your` library
         """
@@ -52,7 +58,7 @@ class DataProcessor:
         # Build a frequency array based on .fil header
         self.frequencies = self._build_frequency_array()
 
-    def _load_hdf5(self):
+    def _load_hdf5(self) -> None:
         """
         Load data from an HDF5 file. Skips bad channels entirely so they never go to memory.
         Also respects freq_slice if given
@@ -132,13 +138,13 @@ class DataProcessor:
             self.data = intensity.T
             self.frequencies = freq_mhz
 
-    def get_frequencies(self):
+    def get_frequencies(self) -> np.ndarray:
         """
         Return the frequency array. If loaded, just return `self.frequencies`
         """
         return self.frequencies
 
-    def _build_frequency_array(self):
+    def _build_frequency_array(self) -> np.ndarray:
         """
         Helper to build frequency array for .fil files using fch1, foff, and nchans
         """

@@ -1,3 +1,4 @@
+from typing import Any, Dict, List, Optional
 import json
 import torch
 import argparse
@@ -11,7 +12,7 @@ from pytorch_dedispersion.dedispersion import Dedispersion
 from pytorch_dedispersion.boxcar_filter import BoxcarFilter
 from pytorch_dedispersion.candidate_finder import CandidateFinder
 
-def load_config(config_file):
+def load_config(config_file: str) -> Dict[str, Any]:
     """Load configuration from a JSON file.
 
     Args:
@@ -24,7 +25,7 @@ def load_config(config_file):
         config = json.load(file)
     return config
 
-def generate_dm_range(dm_ranges):
+def generate_dm_range(dm_ranges: List[Dict[str, float]]) -> torch.Tensor:
     """Generate a tensor of DM values based on specified ranges and steps.
 
     Args:
@@ -41,7 +42,7 @@ def generate_dm_range(dm_ranges):
         dm_values.extend(torch.arange(start, stop, step).tolist())
     return torch.tensor(dm_values)
 
-def save_candidates_to_csv(candidates, filename):
+def save_candidates_to_csv(candidates: List[Dict[str, Any]], filename: str) -> None:
     """Save candidate information to a CSV file.
 
     Args:
@@ -60,7 +61,7 @@ def save_candidates_to_csv(candidates, filename):
                 candidate['DM Value']
             ])
 
-def print_gpu_memory_usage(device, label=""):
+def print_gpu_memory_usage(device: torch.device, label: str = "") -> None:
     """Print the current GPU memory usage."""
     allocated = torch.cuda.memory_allocated(device)
     reserved = torch.cuda.memory_reserved(device)
@@ -70,7 +71,7 @@ def print_gpu_memory_usage(device, label=""):
     print(summary)
 
 
-def get_total_gpu_memory():
+def get_total_gpu_memory() -> int:
     """Get the total GPU memory available.
 
     Returns:
@@ -79,7 +80,7 @@ def get_total_gpu_memory():
     total_memory = torch.cuda.get_device_properties(0).total_memory
     return total_memory
 
-def load_bad_channels(file_path):
+def load_bad_channels(file_path: str) -> List[int]:
     """Load bad channel indices from a file.
 
     Args:
@@ -93,7 +94,13 @@ def load_bad_channels(file_path):
         bad_channels = list(map(int, content.split()))
     return bad_channels
 
-def dedisperse_and_find_candidates(config, verbose=False, remove_trend=False, window_size=None, gpu_index=0):
+def dedisperse_and_find_candidates(
+        config: Dict[str, Any],
+        verbose: bool = False,
+        remove_trend: bool = False,
+        window_size: Optional[int] = None,
+        gpu_index: int = 0,
+    ) -> None:
     """Perform dedispersion and find candidates.
 
     Args:
@@ -251,7 +258,7 @@ def dedisperse_and_find_candidates(config, verbose=False, remove_trend=False, wi
         print(f"Candidates saved to {filename}")
 
 
-def main():
+def main() -> None:
     """Dedisperse data and find candidates."""
     parser = argparse.ArgumentParser(description="Dedisperse data and find candidates.")
     parser.add_argument("-c", "--config", type=str, required=True, help="Path to the configuration file.")
