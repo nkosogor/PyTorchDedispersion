@@ -1,0 +1,59 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "PyTorchDedispersion"
+version = "0.1.0"
+description = "GPU-accelerated dedispersion, boxcar filtering, and FRB candidate finding in PyTorch."
+readme = "README.md"
+requires-python = ">=3.8"
+license = { file = "LICENSE" }
+authors = [{ name = "Nikita Kosogorov+" , email = "nakosogorov@gmail.com" }]
+classifiers = [
+  "Programming Language :: Python :: 3",
+  "License :: OSI Approved :: BSD License",
+  "Operating System :: OS Independent",
+  "Topic :: Scientific/Engineering :: Astronomy"
+]
+
+
+dependencies = [
+  "numpy",
+  "tqdm",
+  "h5py"
+]
+
+[project.optional-dependencies]
+fil = ["your"]          # needed for reading .fil files
+dev = [
+  "pytest",
+  "pytest-cov",
+  "black",
+  "ruff",
+  "build",
+  "twine",
+  "pre-commit"
+]
+
+[project.scripts]
+pydedisp = "pytorch_dedispersion.dedisperse_candidates:main"
+pydedisp-large = "pytorch_dedispersion.dedisperse_candidates_large_hdf:main"
+pydedisp-large2 = "pytorch_dedispersion.dedisperse_candidates_large_hdf_two_threads:main"
+
+[tool.setuptools]
+include-package-data = true
+
+[tool.setuptools.packages.find]
+include = ["pytorch_dedispersion*"]
+
+[tool.pytest.ini_options]
+addopts = "-q"
+testpaths = ["tests"]
+
+[tool.black]
+line-length = 100
+
+[tool.ruff]
+line-length = 100
+select = ["E","F","I","UP"]

@@ -1,29 +1,52 @@
+# tests/integration_test.py
 import subprocess
 import os
 import glob
 import csv
 import math
+import pathlib
+import pytest
 
 def test_dedisperse():
-    # Define paths
-    script_path = os.path.abspath('../pytorch_dedispersion/dedisperse_candidates.py')
-    config_path = os.path.abspath('test_config.json')
-    output_dir = os.path.abspath('.')
+    here = pathlib.Path(__file__).parent
+    config_path = str(here / "test_config.json")
+    output_dir = str(here)
 
-    # Run the script with the test config
+    # Optional: skip cleanly if sample data isn't present
+    if not (here / "test.fil").exists():
+        pytest.skip("tests/test.fil not found (install the 'fil' extra and ensure sample data is present).")
+
+    # Clean up any leftover outputs from prior runs (in tests/)
+    for f in glob.glob(os.path.join(output_dir, "candidates_*.csv")):
+        try:
+            os.remove(f)
+        except OSError:
+            pass
+
+    # Run the script with the test config from inside tests/
     result = subprocess.run(
-        ['python', script_path, '-c', config_path, '--gpu', '0', '-v'],
+        [
+            "python",
+            "-m",
+            "pytorch_dedispersion.dedisperse_candidates",
+            "-c",
+            "test_config.json",
+            "--gpu",
+            "0",
+            "-v",
+        ],
         capture_output=True,
-        text=True
+        text=True,
+        cwd=output_dir,  # <- run in tests/ so relative paths in config work
     )
 
-    # Print output
     print(result.stdout)
+    if result.returncode != 0:
+        print("STDERR:\n", result.stderr)
+        raise AssertionError("dedisperse_candidates failed")
 
-    # Verify the result (check if the candidates file is created)
-    expected_output_file = os.path.join(output_dir, 'candidates_*.csv')
-    files = glob.glob(expected_output_file)
-
+    # Verify the result (check if the candidates file is created in tests/)
+    files = glob.glob(os.path.join(output_dir, "candidates_*.csv"))
     assert len(files) == 1, "Expected one candidates file to be created."
     print(f"Test passed. Candidates file created: {files[0]}")
 
@@ -32,21 +55,24 @@ def test_dedisperse():
     expected_time = 2.0288829375
     found_line = False
 
-    with open(files[0], mode='r') as file:
+    with open(files[0], mode="r") as file:
         reader = csv.reader(file)
         next(reader)  # Skip header
         for row in reader:
             snr = float(row[0])
             time_sec = float(row[2])
-            if math.isclose(snr, expected_snr, rel_tol=1e-2) and math.isclose(time_sec, expected_time, rel_tol=1e-5) and row[1] == '1602' and row[3:] == ['1', '475.0']:
+            if (
+                math.isclose(snr, expected_snr, rel_tol=1e-2)
+                and math.isclose(time_sec, expected_time, rel_tol=1e-5)
+                and row[1] == "1602"
+                and row[3:] == ["1", "475.0"]
+            ):
                 found_line = True
                 break
 
     assert found_line, f"Expected line not found. Closest SNR found: {snr}, Closest Time found: {time_sec}"
     print(f"Test passed. Expected line found: SNR={snr}, Time={time_sec}")
+
     # Remove the created candidates file
     os.remove(files[0])
     print("All tests passed. Candidates file removed.")
-
-if __name__ == "__main__":
-    test_dedisperse()
