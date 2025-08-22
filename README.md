@@ -1,5 +1,6 @@
 # PyTorchDedispersion
 [![CI](https://github.com/nkosogor/PyTorchDedispersion/actions/workflows/ci.yml/badge.svg)](https://github.com/nkosogor/PyTorchDedispersion/actions/workflows/ci.yml)
+[![codecov](https://codecov.io/gh/nkosogor/PyTorchDedispersion/branch/feature%2Fdocker-codecov/graph/badge.svg)](https://app.codecov.io/gh/nkosogor/PyTorchDedispersion/branch/feature%2Fdocker-codecov)
 [![Documentation Status](https://readthedocs.org/projects/pytorchdedispersion/badge/?version=latest)](https://pytorchdedispersion.readthedocs.io/en/latest/?badge=latest)
 ![License](https://img.shields.io/badge/license-BSD--3--Clause-blue)
 ![Python](https://img.shields.io/badge/python-3.9%20|%203.10%20|%203.11-blue)

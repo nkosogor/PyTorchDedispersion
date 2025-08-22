@@ -1,0 +1,14 @@
+codecov:
+  require_ci_to_pass: yes
+coverage:
+  status:
+    project:
+      default:
+        target: auto
+        threshold: 2%
+    patch:
+      default:
+        target: 80%
+comment:
+  layout: "condensed_header, condensed_files, condensed_footer"
+  behavior: default
