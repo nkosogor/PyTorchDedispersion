@@ -1,6 +1,6 @@
 # PyTorchDedispersion
 [![CI](https://github.com/nkosogor/PyTorchDedispersion/actions/workflows/ci.yml/badge.svg)](https://github.com/nkosogor/PyTorchDedispersion/actions/workflows/ci.yml)
-[![codecov](https://codecov.io/gh/nkosogor/PyTorchDedispersion/branch/feature%2Fdocker-codecov/graph/badge.svg)](https://app.codecov.io/gh/nkosogor/PyTorchDedispersion/branch/feature%2Fdocker-codecov)
+[![codecov](https://codecov.io/gh/nkosogor/PyTorchDedispersion/branch/main/graph/badge.svg)](https://app.codecov.io/gh/nkosogor/PyTorchDedispersion/branch/main)
 [![Documentation Status](https://readthedocs.org/projects/pytorchdedispersion/badge/?version=latest)](https://pytorchdedispersion.readthedocs.io/en/latest/?badge=latest)
 ![License](https://img.shields.io/badge/license-BSD--3--Clause-blue)
 ![Python](https://img.shields.io/badge/python-3.9%20|%203.10%20|%203.11-blue)
@@ -18,8 +18,9 @@
    - [Running the Dedispersion Script](#running-the-dedispersion-script)
    - [Output](#output)
 5. [Running Tests](#running-tests)
-6. [License](#license)
-7. [Contact Information](#contact-information)
+6. [Docker (CPU & GPU) quickstart](#docker-cpu--gpu-quickstart)
+7. [License](#license)
+8. [Contact Information](#contact-information)
 
 ## Description
 
@@ -184,6 +185,40 @@ python dedispersion_test.py
 ```
 
 > The integration test runs the CLI and checks that a `candidates_*.csv` file is produced with expected values. Tests will use GPU if available; otherwise they run on CPU.
+
+## Docker (CPU & GPU) quickstart
+
+### Build images
+
+```bash
+# CPU image
+make build-cpu
+
+# GPU image (host must have NVIDIA driver + NVIDIA Container Toolkit)
+make build-gpu
+```
+
+### Run tests inside the images
+
+```bash
+make test-cpu
+make test-gpu
+```
+
+### Run the CLI on sample data (`tests/test.fil`)
+
+Mount the tests directory and run the CLI via the image ENTRYPOINT (`pydedisp`):
+
+```bash
+# CPU
+docker run --rm -v $PWD/tests:/data -w /data pydedisp:cpu \
+    -c test_config.json -v
+
+# GPU
+docker run --rm --gpus all -v $PWD/tests:/data -w /data pydedisp:gpu \
+    -c test_config.json -v --gpu 0
+```
+
 
 ## License
 

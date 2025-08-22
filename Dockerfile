@@ -21,7 +21,7 @@ CMD ["--help"]
 ########################################
 # GPU image (requires NVIDIA Container Toolkit on host)
 ########################################
-FROM pytorch/pytorch:2.4.0-cuda12.1-cudnn8-runtime AS gpu
+FROM pytorch/pytorch:2.3.1-cuda12.1-cudnn8-runtime AS gpu
 ENV PIP_DISABLE_PIP_VERSION_CHECK=1 PYTHONDONTWRITEBYTECODE=1 PYTHONUNBUFFERED=1
 WORKDIR /app
 COPY pyproject.toml README.md LICENSE mkdocs.yml .readthedocs.yaml ./
