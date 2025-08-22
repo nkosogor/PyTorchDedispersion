@@ -8,6 +8,13 @@ jobs:
   test:
     runs-on: ubuntu-latest
     timeout-minutes: 30
+
+
+    permissions:
+      contents: read
+      id-token: write
+      pull-requests: write
+
     strategy:
       fail-fast: false
       matrix:
@@ -73,6 +80,13 @@ jobs:
         with:
           name: coverage-xml-${{ matrix.python-version }}
           path: coverage.xml
+
+      - name: Upload to Codecov
+        uses: codecov/codecov-action@v5
+        with:
+          use_oidc: true
+          files: ./coverage.xml
+          fail_ci_if_error: true
 
   docs:
     runs-on: ubuntu-latest
